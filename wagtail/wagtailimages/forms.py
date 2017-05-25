@@ -47,6 +47,8 @@ def get_image_form(model):
         # a bit pointless here
         widgets={
             'tags': widgets.AdminTagWidget,
+            'expire_at': widgets.AdminDateInput,
+            'go_live_at': widgets.AdminDateInput,
             'file': forms.FileInput(),
             'focal_point_x': forms.HiddenInput(attrs={'class': 'focal_point_x'}),
             'focal_point_y': forms.HiddenInput(attrs={'class': 'focal_point_y'}),
