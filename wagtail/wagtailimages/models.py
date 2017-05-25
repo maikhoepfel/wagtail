@@ -279,6 +279,7 @@ class AbstractImage(CollectionMember, index.Indexed, models.Model):
                 'jpeg': '.jpg',
                 'png': '.png',
                 'gif': '.gif',
+                'tiff': '.tif',
             }
 
             output_extension = filter.spec.replace('|', '.') + FORMAT_EXTENSIONS[generated_image.format_name]
@@ -384,8 +385,8 @@ class Filter(object):
                 # Default to outputting in original format
                 output_format = original_format
 
-                # Convert BMP files to PNG
-                if original_format == 'bmp':
+                # Convert BMP and TIFF files to PNG
+                if original_format in ['bmp', 'tiff']:
                     output_format = 'png'
 
                 # Convert unanimated GIFs to PNG as well
