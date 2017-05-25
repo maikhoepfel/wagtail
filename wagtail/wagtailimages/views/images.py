@@ -5,6 +5,7 @@ import os
 from django.core.urlresolvers import NoReverseMatch, reverse
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.translation import ugettext as _
 from django.views.decorators.vary import vary_on_headers
 
@@ -28,23 +29,15 @@ permission_checker = PermissionPolicyChecker(permission_policy)
 @permission_checker.require_any('add', 'change', 'delete')
 @vary_on_headers('X-Requested-With')
 def index(request):
+    """
+    Copy of wagtailimages.views.images, which introduces sorting and excluding expired images.
+    """
     Image = get_image_model()
 
     # Get images (filtered by user permission)
     images = permission_policy.instances_user_has_any_permission_for(
         request.user, ['change', 'delete']
     ).order_by('-created_at')
-
-    # Search
-    query_string = None
-    if 'q' in request.GET:
-        form = SearchForm(request.GET, placeholder=_("Search images"))
-        if form.is_valid():
-            query_string = form.cleaned_data['q']
-
-            images = images.search(query_string)
-    else:
-        form = SearchForm(placeholder=_("Search images"))
 
     # Filter by collection
     current_collection = None
@@ -56,7 +49,36 @@ def index(request):
         except (ValueError, Collection.DoesNotExist):
             pass
 
-    paginator, images = paginate(request, images)
+    # Exclude expired images
+    today = timezone.now().date()
+    # Exclude ones where publish_at is set > today
+    images = images.exclude(go_live_at__isnull=False, go_live_at__gt=today)
+    # Exclude ones where expire_at is set and < today
+    images = images.exclude(expire_at__isnull=False, expire_at__lt=today)
+
+    # Search or order
+    # Search results are already ordered by relevance, so we can't order them manually.
+    query_string = None
+    if request.GET.get('q'):
+        order = None
+        form = SearchForm(request.GET, placeholder=_("Search images"))
+        if form.is_valid():
+            query_string = form.cleaned_data['q']
+            images = images.search(query_string)
+            paginator, images = paginate(request, images)
+    else:
+        form = SearchForm(placeholder=_("Search images"))
+
+        unordered_images = images
+        order = request.GET.get('order', 'created_at')
+        try:
+            # This raises a FieldError for an empty string.
+            ordered_images = images.order_by(order)
+            paginator, images = paginate(request, ordered_images)
+            # Forcing enumeration raises FieldError for invalid field names.
+            images.object_list = list(images.object_list)
+        except FieldError:
+            paginator, images = paginate(request, unordered_images)
 
     collections = permission_policy.collections_user_has_any_permission_for(
         request.user, ['add', 'change']
@@ -82,6 +104,7 @@ def index(request):
             'collections': collections,
             'current_collection': current_collection,
             'user_can_add': permission_policy.user_has_permission(request.user, 'add'),
+            'order': order,
         })
 
 
