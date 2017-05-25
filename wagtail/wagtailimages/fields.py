@@ -9,8 +9,8 @@ from django.template.defaultfilters import filesizeformat
 from django.utils.translation import ugettext_lazy as _
 from PIL import Image
 
-ALLOWED_EXTENSIONS = ['gif', 'jpg', 'jpeg', 'png']
-SUPPORTED_FORMATS_TEXT = _("GIF, JPEG, PNG")
+ALLOWED_EXTENSIONS = ['gif', 'jpg', 'jpeg', 'png', 'bmp', 'tiff', 'tif']
+SUPPORTED_FORMATS_TEXT = _("GIF, JPEG, PNG, BMP, TIFF")
 
 
 class WagtailImageField(ImageField):
@@ -83,6 +83,8 @@ class WagtailImageField(ImageField):
         image_format = extension.upper()
         if image_format == 'JPG':
             image_format = 'JPEG'
+        if image_format == 'TIF':
+            image_format = 'TIFF'
 
         internal_image_format = image.format.upper()
         if internal_image_format == 'MPO':
