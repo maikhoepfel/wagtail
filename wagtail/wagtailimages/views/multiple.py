@@ -33,6 +33,11 @@ def get_image_edit_form(ImageModel):
                 'focal_point_height',
             )
 
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            if 'tags' in self.fields:
+                self.fields['tags'].required = True
+
     return ImageEditForm
 
 
