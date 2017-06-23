@@ -37,7 +37,7 @@ def index(request):
     # Get images (filtered by user permission)
     images = permission_policy.instances_user_has_any_permission_for(
         request.user, ['change', 'delete']
-    ).order_by('-created_at')
+    )
 
     # Filter by collection
     current_collection = None
@@ -70,7 +70,7 @@ def index(request):
         form = SearchForm(placeholder=_("Search images"))
 
         unordered_images = images
-        order = request.GET.get('order', 'created_at')
+        order = request.GET.get('order', '-created_at')
         try:
             # This raises a FieldError for an empty string.
             ordered_images = images.order_by(order)
