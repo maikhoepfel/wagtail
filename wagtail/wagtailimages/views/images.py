@@ -115,10 +115,14 @@ def edit(request, image_id):
 
     image = get_object_or_404(Image, id=image_id)
 
+    # All phos users are Editors and hence have the change permission...
     if not permission_policy.user_has_permission_for_instance(request.user, 'change', image):
         return permission_denied(request)
 
-    if request.method == 'POST':
+    # ... but we check if the image is theirs and disallow edits if it isn't.
+    allow_edits = request.user.is_superuser or request.user == image.uploaded_by_user
+
+    if allow_edits and request.method == 'POST':
         original_file = image.file
         form = ImageForm(request.POST, request.FILES, instance=image, user=request.user)
         if form.is_valid():
@@ -145,6 +149,13 @@ def edit(request, image_id):
             messages.error(request, _("The image could not be saved due to errors."))
     else:
         form = ImageForm(instance=image, user=request.user)
+        if not allow_edits:
+            for field in form.fields:
+                form.fields[field].disabled = True
+            messages.info(
+                request,
+                "Dies ist nicht ihr Bild - Sie können es herunterladen, aber nicht editieren."
+            )
 
     # Check if we should enable the frontend url generator
     try:
