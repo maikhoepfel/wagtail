@@ -150,8 +150,6 @@ def edit(request, image_id):
     else:
         form = ImageForm(instance=image, user=request.user)
         if not allow_edits:
-            for field in form.fields:
-                form.fields[field].disabled = True
             messages.info(
                 request,
                 "Dies ist nicht ihr Bild - Sie können es herunterladen, aber nicht editieren."
@@ -181,6 +179,7 @@ def edit(request, image_id):
         'user_can_delete': permission_policy.user_has_permission_for_instance(
             request.user, 'delete', image
         ),
+        'allow_edits': allow_edits,
     })
 
 
